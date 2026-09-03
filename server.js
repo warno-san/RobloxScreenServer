@@ -127,5 +127,5 @@ const port = process.env.PORT || 3000;
 
 server.listen(port, "0.0.0.0", () => {
     console.log("サーバー起動！");
-    console.log(\`port: \${port}\`);
+    console.log(`port: ${port}`);
 });
