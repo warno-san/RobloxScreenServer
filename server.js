@@ -1,6 +1,7 @@
 const http = require("http");
 
 let color = "red";
+let assetId = "";
 
 const server = http.createServer((req, res) => {
 
