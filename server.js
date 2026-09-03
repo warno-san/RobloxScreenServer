@@ -29,6 +29,35 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // アセットIDを設定する
+    if (req.url.startsWith("/setasset?")) {
+
+        const query = new URL(req.url, "http://localhost").searchParams;
+        const newAssetId = query.get("id");
+
+        if (newAssetId) {
+            assetId = newAssetId;
+        }
+
+        res.writeHead(200, {
+            "Content-Type": "text/plain; charset=utf-8"
+        });
+
+        res.end("アセットIDを設定しました！");
+        return;
+    }
+
+    // 現在のアセットIDを教える
+    if (req.url === "/asset") {
+
+        res.writeHead(200, {
+            "Content-Type": "text/plain; charset=utf-8"
+        });
+
+        res.end(assetId);
+        return;
+    }
+
     // 現在の色を教える
     if (req.url === "/color") {
 
@@ -63,6 +92,28 @@ const server = http.createServer((req, res) => {
             <button onclick="location.href='/blue'">
                 🔵 青にする
             </button>
+
+            <h2>画像を変更</h2>
+
+            <input id="assetId" type="text" placeholder="アセットIDを入力">
+
+            <button onclick="setAsset()">
+                🖼️ 画像を表示
+            </button>
+
+            <script>
+                function setAsset() {
+                    const id = document.getElementById("assetId").value;
+
+                    if (!id) {
+                        alert("アセットIDを入力してください！");
+                        return;
+                    }
+
+                    location.href = "/setasset?id=" + encodeURIComponent(id);
+                }
+            </script>
+
         </body>
         </html>
     `);
@@ -72,5 +123,5 @@ const port = process.env.PORT || 3000;
 
 server.listen(port, "0.0.0.0", () => {
     console.log("サーバー起動！");
-    console.log(`port: ${port}`);
+    console.log(\`port: \${port}\`);
 });
