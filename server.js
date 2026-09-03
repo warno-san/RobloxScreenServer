@@ -1,7 +1,7 @@
 const http = require("http");
 
 let color = "red";
-let assetId = "";
+let textureId = "";
 
 const server = http.createServer((req, res) => {
 
@@ -29,32 +29,32 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // アセットIDを設定する
+    // テクスチャIDを設定する
     if (req.url.startsWith("/setasset?")) {
 
         const query = new URL(req.url, "http://localhost").searchParams;
-        const newAssetId = query.get("id");
+        const newTextureId = query.get("id");
 
-        if (newAssetId) {
-            assetId = newAssetId;
+        if (newTextureId) {
+            textureId = newTextureId;
         }
 
         res.writeHead(200, {
             "Content-Type": "text/plain; charset=utf-8"
         });
 
-        res.end("アセットIDを設定しました！");
+        res.end("テクスチャIDを設定しました！");
         return;
     }
 
-    // 現在のアセットIDを教える
+    // 現在のテクスチャIDを教える
     if (req.url === "/asset") {
 
         res.writeHead(200, {
             "Content-Type": "text/plain; charset=utf-8"
         });
 
-        res.end(assetId);
+        res.end(textureId);
         return;
     }
 
@@ -95,7 +95,11 @@ const server = http.createServer((req, res) => {
 
             <h2>画像を変更</h2>
 
-            <input id="assetId" type="text" placeholder="アセットIDを入力">
+            <p>
+                ⚠️ <strong>「アセットID」ではなく「テクスチャID」を入力してください。</strong>
+            </p>
+
+            <input id="assetId" type="text" placeholder="テクスチャIDを入力">
 
             <button onclick="setAsset()">
                 🖼️ 画像を表示
@@ -106,7 +110,7 @@ const server = http.createServer((req, res) => {
                     const id = document.getElementById("assetId").value;
 
                     if (!id) {
-                        alert("アセットIDを入力してください！");
+                        alert("テクスチャIDを入力してください！");
                         return;
                     }
 
@@ -123,5 +127,5 @@ const port = process.env.PORT || 3000;
 
 server.listen(port, "0.0.0.0", () => {
     console.log("サーバー起動！");
-    console.log(`port: ${port}`);
+    console.log(\`port: \${port}\`);
 });
