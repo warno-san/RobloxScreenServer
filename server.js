@@ -14,8 +14,7 @@ async function loadTextureId() {
             `${supabaseUrl}/rest/v1/screen_state?select=texture_id&order=id.desc&limit=1`,
             {
                 headers: {
-                    "apikey": supabaseKey,
-                    "Authorization": `Bearer ${supabaseKey}`
+                    "apikey": supabaseKey
                 }
             }
         );
@@ -48,7 +47,6 @@ async function saveTextureId(newTextureId) {
                 headers: {
                     "Content-Type": "application/json",
                     "apikey": supabaseKey,
-                    "Authorization": `Bearer ${supabaseKey}`,
                     "Prefer": "return=minimal"
                 },
                 body: JSON.stringify({
