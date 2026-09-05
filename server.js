@@ -3,7 +3,73 @@ const http = require("http");
 let color = "red";
 let textureId = "";
 
-const server = http.createServer((req, res) => {
+// Supabaseの設定
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+
+// Supabaseから最後のテクスチャIDを取得
+async function loadTextureId() {
+    try {
+        const response = await fetch(
+            `${supabaseUrl}/rest/v1/screen_state?select=texture_id&order=id.desc&limit=1`,
+            {
+                headers: {
+                    "apikey": supabaseKey,
+                    "Authorization": `Bearer ${supabaseKey}`
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Supabase error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.length > 0) {
+            textureId = data[0].texture_id || "";
+            console.log("Supabaseから復元:", textureId);
+        } else {
+            console.log("保存されているテクスチャIDはありません");
+        }
+
+    } catch (error) {
+        console.error("Supabaseからの読み込みに失敗:", error);
+    }
+}
+
+// SupabaseにテクスチャIDを保存
+async function saveTextureId(newTextureId) {
+    try {
+        const response = await fetch(
+            `${supabaseUrl}/rest/v1/screen_state`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "apikey": supabaseKey,
+                    "Authorization": `Bearer ${supabaseKey}`,
+                    "Prefer": "return=minimal"
+                },
+                body: JSON.stringify({
+                    texture_id: newTextureId
+                })
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Supabase error: ${response.status} ${errorText}`);
+        }
+
+        console.log("Supabaseに保存:", newTextureId);
+
+    } catch (error) {
+        console.error("Supabaseへの保存に失敗:", error);
+    }
+}
+
+const server = http.createServer(async (req, res) => {
 
     // 赤にする
     if (req.url === "/red") {
@@ -37,6 +103,9 @@ const server = http.createServer((req, res) => {
 
         if (newTextureId) {
             textureId = newTextureId;
+
+            // Supabaseに保存
+            await saveTextureId(newTextureId);
         }
 
         res.writeHead(200, {
@@ -125,7 +194,10 @@ const server = http.createServer((req, res) => {
 
 const port = process.env.PORT || 3000;
 
-server.listen(port, "0.0.0.0", () => {
+server.listen(port, "0.0.0.0", async () => {
     console.log("サーバー起動！");
     console.log(`port: ${port}`);
+
+    // 起動時にSupabaseから最後のIDを復元
+    await loadTextureId();
 });
