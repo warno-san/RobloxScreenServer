@@ -1,6 +1,5 @@
 const http = require("http");
 
-let color = "red";
 let textureId = "";
 
 // Supabaseの設定
@@ -17,7 +16,7 @@ async function loadTextureId() {
     try {
 
         const response = await fetch(
-            `${supabaseUrl}/rest/v1/screen_state?select=texture_id&order=id.desc&limit=1`,
+            `${supabaseUrl}/rest/v1/screen_state?select=id,texture_id&order=id.desc&limit=1`,
             {
                 headers: {
                     "apikey": supabaseKey
@@ -51,6 +50,11 @@ async function loadTextureId() {
                 );
             }
 
+        } else {
+
+            console.log(
+                "Supabaseにデータがありません"
+            );
         }
 
     } catch (error) {
@@ -64,17 +68,96 @@ async function loadTextureId() {
 
 
 // ==============================
-// SupabaseにテクスチャIDを保存
+// Supabaseの既存の1行を更新
 // ==============================
 
 async function saveTextureId(newTextureId) {
 
     try {
 
-        const response = await fetch(
-            `${supabaseUrl}/rest/v1/screen_state`,
+        // 現在ある最新の1行を取得
+        const getResponse = await fetch(
+            `${supabaseUrl}/rest/v1/screen_state?select=id&order=id.desc&limit=1`,
             {
-                method: "POST",
+                headers: {
+                    "apikey": supabaseKey
+                }
+            }
+        );
+
+        if (!getResponse.ok) {
+
+            const errorText = await getResponse.text();
+
+            throw new Error(
+                `Supabase取得エラー: ${getResponse.status} ${errorText}`
+            );
+        }
+
+        const data = await getResponse.json();
+
+
+        // ==============================
+        // 行が存在しない場合
+        // ==============================
+
+        if (data.length === 0) {
+
+            console.log(
+                "Supabaseに行がないので、新しく作成します"
+            );
+
+            const insertResponse = await fetch(
+                `${supabaseUrl}/rest/v1/screen_state`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json",
+                        "apikey": supabaseKey,
+                        "Prefer": "return=minimal"
+                    },
+
+                    body: JSON.stringify({
+                        texture_id: newTextureId
+                    })
+                }
+            );
+
+            if (!insertResponse.ok) {
+
+                const errorText = await insertResponse.text();
+
+                throw new Error(
+                    `Supabase INSERTエラー: ${insertResponse.status} ${errorText}`
+                );
+            }
+
+            console.log(
+                "Supabaseに新しい行を作成:",
+                newTextureId
+            );
+
+            return;
+        }
+
+
+        // ==============================
+        // 既存の最新の1行を更新
+        // ==============================
+
+        const targetId = data[0].id;
+
+        console.log(
+            "更新する行のID:",
+            targetId
+        );
+
+
+        const updateResponse = await fetch(
+            `${supabaseUrl}/rest/v1/screen_state?id=eq.${targetId}`,
+            {
+                method: "PATCH",
 
                 headers: {
                     "Content-Type": "application/json",
@@ -88,17 +171,19 @@ async function saveTextureId(newTextureId) {
             }
         );
 
-        if (!response.ok) {
 
-            const errorText = await response.text();
+        if (!updateResponse.ok) {
+
+            const errorText = await updateResponse.text();
 
             throw new Error(
-                `Supabase error: ${response.status} ${errorText}`
+                `Supabase UPDATEエラー: ${updateResponse.status} ${errorText}`
             );
         }
 
+
         console.log(
-            "Supabaseに保存:",
+            "Supabaseの既存の行を更新:",
             newTextureId
         );
 
@@ -119,46 +204,9 @@ async function saveTextureId(newTextureId) {
 const server = http.createServer(async (req, res) => {
 
 
-    // ------------------------------
-    // 赤
-    // ------------------------------
-
-    if (req.url === "/red") {
-
-        color = "red";
-
-        res.writeHead(200, {
-            "Content-Type": "text/plain; charset=utf-8"
-        });
-
-        res.end("赤にしました！");
-
-        return;
-    }
-
-
-    // ------------------------------
-    // 青
-    // ------------------------------
-
-    if (req.url === "/blue") {
-
-        color = "blue";
-
-        res.writeHead(200, {
-            "Content-Type": "text/plain; charset=utf-8"
-        });
-
-        res.end("青にしました！");
-
-        return;
-    }
-
-
-    // ------------------------------
-    // サイトからIDを送る
-    // （今後は使わなくてもOK）
-    // ------------------------------
+    // ==============================
+    // サイトからテクスチャIDを送る
+    // ==============================
 
     if (req.url.startsWith("/setasset?")) {
 
@@ -169,26 +217,35 @@ const server = http.createServer(async (req, res) => {
 
         const newTextureId = query.get("id");
 
+
         if (newTextureId) {
 
+            // Render側の現在のIDを更新
             textureId = newTextureId;
 
-            await saveTextureId(newTextureId);
+
+            // Supabaseの既存の行を更新
+            await saveTextureId(
+                newTextureId
+            );
         }
+
 
         res.writeHead(200, {
             "Content-Type": "text/plain; charset=utf-8"
         });
 
-        res.end("テクスチャIDを設定しました！");
+        res.end(
+            "テクスチャIDを設定しました！"
+        );
 
         return;
     }
 
 
-    // ------------------------------
+    // ==============================
     // Robloxが画像IDを取得
-    // ------------------------------
+    // ==============================
 
     if (req.url === "/asset") {
 
@@ -196,31 +253,17 @@ const server = http.createServer(async (req, res) => {
             "Content-Type": "text/plain; charset=utf-8"
         });
 
-        res.end(textureId);
+        res.end(
+            textureId
+        );
 
         return;
     }
 
 
-    // ------------------------------
-    // 色を取得
-    // ------------------------------
-
-    if (req.url === "/color") {
-
-        res.writeHead(200, {
-            "Content-Type": "text/plain; charset=utf-8"
-        });
-
-        res.end(color);
-
-        return;
-    }
-
-
-    // ------------------------------
+    // ==============================
     // その他
-    // ------------------------------
+    // ==============================
 
     res.writeHead(200, {
         "Content-Type": "text/html; charset=utf-8"
@@ -249,13 +292,23 @@ server.listen(
     "0.0.0.0",
     async () => {
 
-        console.log("サーバー起動！");
-        console.log(`port: ${port}`);
+        console.log(
+            "サーバー起動！"
+        );
+
+        console.log(
+            `port: ${port}`
+        );
+
 
         // 起動時にSupabaseから読み込み
         await loadTextureId();
 
+
+        // ==============================
         // 2秒ごとにSupabaseを確認
+        // ==============================
+
         setInterval(
             loadTextureId,
             2000
