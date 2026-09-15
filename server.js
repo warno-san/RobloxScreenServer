@@ -75,7 +75,7 @@ async function saveTextureId(newTextureId) {
 
     try {
 
-        // 現在ある最新の1行を取得
+        // 最新の1行を取得
         const getResponse = await fetch(
             `${supabaseUrl}/rest/v1/screen_state?select=id&order=id.desc&limit=1`,
             {
@@ -98,7 +98,7 @@ async function saveTextureId(newTextureId) {
 
 
         // ==============================
-        // 行が存在しない場合
+        // 行がない場合
         // ==============================
 
         if (data.length === 0) {
@@ -143,16 +143,10 @@ async function saveTextureId(newTextureId) {
 
 
         // ==============================
-        // 既存の最新の1行を更新
+        // 既存の1行を更新
         // ==============================
 
         const targetId = data[0].id;
-
-        console.log(
-            "更新する行のID:",
-            targetId
-        );
-
 
         const updateResponse = await fetch(
             `${supabaseUrl}/rest/v1/screen_state?id=eq.${targetId}`,
@@ -205,6 +199,174 @@ const server = http.createServer(async (req, res) => {
 
 
     // ==============================
+    // サイト
+    // ==============================
+
+    if (req.url === "/") {
+
+        res.writeHead(200, {
+            "Content-Type": "text/html; charset=utf-8"
+        });
+
+        res.end(`
+<!DOCTYPE html>
+
+<html lang="ja">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>Roblox Screen Controller</title>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 40px 20px;
+            background: #f2f2f2;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        h1 {
+            margin-bottom: 30px;
+        }
+
+        input {
+            width: 90%;
+            padding: 12px;
+            font-size: 18px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+
+        button {
+            width: 95%;
+            padding: 13px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #333;
+            color: white;
+        }
+
+        button:hover {
+            background: #555;
+        }
+
+        .info {
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+    <h1>📺 Roblox Screen Controller</h1>
+
+    <p>テクスチャIDを入力してください</p>
+
+    <input
+        id="textureId"
+        type="text"
+        placeholder="テクスチャIDを入力"
+    >
+
+    <br>
+
+    <button onclick="changeImage()">
+        🖼️ 画像を変更
+    </button>
+
+    <div class="info">
+
+        <p>
+            ⚠️ 「アセットID」ではなく
+            「テクスチャID」を入力してください。
+        </p>
+
+    </div>
+
+</div>
+
+
+<script>
+
+async function changeImage() {
+
+    const id =
+        document.getElementById("textureId").value.trim();
+
+
+    if (!id) {
+
+        alert("テクスチャIDを入力してください！");
+
+        return;
+    }
+
+
+    try {
+
+        const response = await fetch(
+            "/setasset?id=" +
+            encodeURIComponent(id)
+        );
+
+
+        const result =
+            await response.text();
+
+
+        alert(result);
+
+
+    } catch (error) {
+
+        alert(
+            "送信に失敗しました！"
+        );
+
+        console.error(error);
+    }
+
+}
+
+</script>
+
+
+</body>
+
+</html>
+        `);
+
+        return;
+    }
+
+
+    // ==============================
     // サイトからテクスチャIDを送る
     // ==============================
 
@@ -215,24 +377,38 @@ const server = http.createServer(async (req, res) => {
             "http://localhost"
         ).searchParams;
 
-        const newTextureId = query.get("id");
+        const newTextureId =
+            query.get("id");
 
 
-        if (newTextureId) {
+        if (!newTextureId) {
 
-            // Render側の現在のIDを更新
-            textureId = newTextureId;
+            res.writeHead(400, {
+                "Content-Type":
+                    "text/plain; charset=utf-8"
+            });
 
-
-            // Supabaseの既存の行を更新
-            await saveTextureId(
-                newTextureId
+            res.end(
+                "テクスチャIDがありません！"
             );
+
+            return;
         }
 
 
+        // Render側の現在のIDを変更
+        textureId = newTextureId;
+
+
+        // Supabaseの既存の1行を更新
+        await saveTextureId(
+            newTextureId
+        );
+
+
         res.writeHead(200, {
-            "Content-Type": "text/plain; charset=utf-8"
+            "Content-Type":
+                "text/plain; charset=utf-8"
         });
 
         res.end(
@@ -244,13 +420,14 @@ const server = http.createServer(async (req, res) => {
 
 
     // ==============================
-    // Robloxが画像IDを取得
+    // RobloxがテクスチャIDを取得
     // ==============================
 
     if (req.url === "/asset") {
 
         res.writeHead(200, {
-            "Content-Type": "text/plain; charset=utf-8"
+            "Content-Type":
+                "text/plain; charset=utf-8"
         });
 
         res.end(
@@ -265,13 +442,14 @@ const server = http.createServer(async (req, res) => {
     // その他
     // ==============================
 
-    res.writeHead(200, {
-        "Content-Type": "text/html; charset=utf-8"
+    res.writeHead(404, {
+        "Content-Type":
+            "text/plain; charset=utf-8"
     });
 
-    res.end(`
-        <h1>Roblox Screen Server</h1>
-    `);
+    res.end(
+        "ページが見つかりません"
+    );
 
 });
 
@@ -280,7 +458,8 @@ const server = http.createServer(async (req, res) => {
 // Renderのポート
 // ==============================
 
-const port = process.env.PORT || 3000;
+const port =
+    process.env.PORT || 3000;
 
 
 // ==============================
@@ -305,10 +484,7 @@ server.listen(
         await loadTextureId();
 
 
-        // ==============================
         // 2秒ごとにSupabaseを確認
-        // ==============================
-
         setInterval(
             loadTextureId,
             2000
