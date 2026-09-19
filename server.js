@@ -1258,40 +1258,7 @@ setInterval(
 
         return;
     }
-// ==================================================
-// スケジュール削除
-// ==================================================
 
-if (pathname === "/delete-schedule") {
-
-    const id = url.searchParams.get("id");
-
-    if (!id) {
-        res.writeHead(400, {
-            "Content-Type": "text/plain; charset=utf-8"
-        });
-
-        res.end("IDが指定されていません");
-        return;
-    }
-
-    const success = await deleteSchedule(id);
-
-    res.writeHead(
-        success ? 200 : 500,
-        {
-            "Content-Type": "text/plain; charset=utf-8"
-        }
-    );
-
-    res.end(
-        success
-            ? "削除しました"
-            : "削除に失敗しました"
-    );
-
-    return;
-}
 
     // ==================================================
     // Robloxが現在のテクスチャIDを取得
