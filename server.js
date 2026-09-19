@@ -48,7 +48,6 @@ async function loadTextureId() {
                     textureId
                 );
             }
-
         }
 
     } catch (error) {
@@ -233,6 +232,48 @@ async function addSchedule(executeAt, newTextureId) {
 
 
 // ==================================================
+// 登録済みスケジュールを取得
+// ==================================================
+
+async function getSchedules() {
+
+    try {
+
+        const response = await fetch(
+            `${supabaseUrl}/rest/v1/screen_schedule?select=id,execute_at,texture_id,executed&order=execute_at.asc`,
+            {
+                headers: {
+                    "apikey": supabaseKey
+                }
+            }
+        );
+
+
+        if (!response.ok) {
+
+            const errorText = await response.text();
+
+            throw new Error(
+                `Supabaseスケジュール取得エラー: ${response.status} ${errorText}`
+            );
+        }
+
+
+        return await response.json();
+
+    } catch (error) {
+
+        console.error(
+            "スケジュール一覧の取得に失敗:",
+            error
+        );
+
+        return [];
+    }
+}
+
+
+// ==================================================
 // 実行するスケジュールを確認
 // ==================================================
 
@@ -322,9 +363,7 @@ async function checkSchedules() {
                     "実行済み更新に失敗:",
                     errorText
                 );
-
             }
-
         }
 
     } catch (error) {
@@ -355,9 +394,7 @@ const server = http.createServer(async (req, res) => {
         });
 
 
-        res.end(`
-
-<!DOCTYPE html>
+        res.end(`<!DOCTYPE html>
 
 <html lang="ja">
 
@@ -513,6 +550,65 @@ button:hover {
 }
 
 
+.schedule-item {
+
+    text-align:
+        left;
+
+    background:
+        #f7f7f7;
+
+    border:
+        1px solid #ddd;
+
+    border-radius:
+        10px;
+
+    padding:
+        15px;
+
+    margin-top:
+        10px;
+
+}
+
+
+.schedule-date {
+
+    font-size:
+        18px;
+
+    font-weight:
+        bold;
+
+    margin-bottom:
+        8px;
+
+}
+
+
+.schedule-id {
+
+    color:
+        #555;
+
+    word-break:
+        break-all;
+
+}
+
+
+.no-schedule {
+
+    color:
+        #777;
+
+    padding:
+        15px;
+
+}
+
+
 .info {
 
     margin-top:
@@ -571,7 +667,7 @@ button:hover {
 
 
 <!-- ========================= -->
-<!-- スケジュール -->
+<!-- スケジュール登録 -->
 <!-- ========================= -->
 
 <div class="schedule">
@@ -623,6 +719,24 @@ button:hover {
 </button>
 
 
+<!-- ========================= -->
+<!-- 登録済み一覧 -->
+<!-- ========================= -->
+
+<h2>
+📋 登録済みスケジュール
+</h2>
+
+
+<div id="scheduleList">
+
+    <div class="no-schedule">
+        読み込み中...
+    </div>
+
+</div>
+
+
 </div>
 
 
@@ -633,9 +747,11 @@ button:hover {
 「テクスチャID」を入力してください。
 </p>
 
+
 <p>
 日本時間（JST）で設定してください。
 </p>
+
 
 </div>
 
@@ -651,7 +767,6 @@ button:hover {
 // ==================================================
 
 async function changeImage() {
-
 
     const id =
         document
@@ -694,7 +809,6 @@ async function changeImage() {
 
         console.error(error);
     }
-
 }
 
 
@@ -703,7 +817,6 @@ async function changeImage() {
 // ==================================================
 
 async function addSchedule() {
-
 
     const date =
         document
@@ -760,6 +873,10 @@ async function addSchedule() {
         alert(result);
 
 
+        // 登録後すぐに一覧を更新
+        loadSchedules();
+
+
     } catch (error) {
 
         alert(
@@ -768,8 +885,157 @@ async function addSchedule() {
 
         console.error(error);
     }
-
 }
+
+
+// ==================================================
+// HTMLに安全に表示するための処理
+// ==================================================
+
+function escapeHtml(text) {
+
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+// ==================================================
+// 登録済みスケジュールを表示
+// ==================================================
+
+async function loadSchedules() {
+
+    try {
+
+        const response =
+            await fetch("/schedules");
+
+
+        const schedules =
+            await response.json();
+
+
+        const list =
+            document.getElementById(
+                "scheduleList"
+            );
+
+
+        // 未実行のものだけ表示
+        const upcoming =
+            schedules.filter(
+                schedule => !schedule.executed
+            );
+
+
+        // スケジュールがない場合
+        if (upcoming.length === 0) {
+
+            list.innerHTML = `
+                <div class="no-schedule">
+                    登録されているスケジュールはありません。
+                </div>
+            `;
+
+            return;
+        }
+
+
+        list.innerHTML = "";
+
+
+        for (const schedule of upcoming) {
+
+            const date =
+                new Date(
+                    schedule.execute_at
+                );
+
+
+            // 日本時間で表示
+            const formattedDate =
+                date.toLocaleString(
+                    "ja-JP",
+                    {
+                        timeZone: "Asia/Tokyo",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                    }
+                );
+
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+
+            item.className =
+                "schedule-item";
+
+
+            item.innerHTML = `
+
+                <div class="schedule-date">
+
+                    📅 ${escapeHtml(formattedDate)}
+
+                </div>
+
+                <div class="schedule-id">
+
+                    テクスチャID：
+                    ${escapeHtml(schedule.texture_id)}
+
+                </div>
+
+            `;
+
+
+            list.appendChild(item);
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "スケジュール表示エラー:",
+            error
+        );
+
+
+        document
+            .getElementById("scheduleList")
+            .innerHTML = `
+                <div class="no-schedule">
+                    スケジュールを取得できませんでした。
+                </div>
+            `;
+    }
+}
+
+
+// ==================================================
+// 起動時にスケジュールを取得
+// ==================================================
+
+loadSchedules();
+
+
+// ==================================================
+// 2秒ごとにスケジュール一覧を更新
+// ==================================================
+
+setInterval(
+    loadSchedules,
+    2000
+);
 
 
 </script>
@@ -777,9 +1043,7 @@ async function addSchedule() {
 
 </body>
 
-</html>
-
-        `);
+</html>`);
 
         return;
     }
@@ -790,7 +1054,6 @@ async function addSchedule() {
     // ==================================================
 
     if (req.url.startsWith("/setasset?")) {
-
 
         const query =
             new URL(
@@ -843,7 +1106,6 @@ async function addSchedule() {
     // ==================================================
 
     if (req.url.startsWith("/schedule?")) {
-
 
         const query =
             new URL(
@@ -900,11 +1162,35 @@ async function addSchedule() {
 
 
     // ==================================================
+    // 登録済みスケジュール一覧
+    // ==================================================
+
+    if (req.url === "/schedules") {
+
+        const schedules =
+            await getSchedules();
+
+
+        res.writeHead(200, {
+            "Content-Type":
+                "application/json; charset=utf-8"
+        });
+
+
+        res.end(
+            JSON.stringify(schedules)
+        );
+
+
+        return;
+    }
+
+
+    // ==================================================
     // Robloxが現在のテクスチャIDを取得
     // ==================================================
 
     if (req.url === "/asset") {
-
 
         res.writeHead(200, {
             "Content-Type":
@@ -954,7 +1240,6 @@ server.listen(
     port,
     "0.0.0.0",
     async () => {
-
 
         console.log(
             "サーバー起動！"
