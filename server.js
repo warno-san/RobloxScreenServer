@@ -1259,6 +1259,51 @@ setInterval(
         return;
     }
 
+    // ==================================================
+// スケジュール削除
+// ==================================================
+
+if (req.url.startsWith("/delete-schedule?")) {
+
+    const query =
+        new URL(
+            req.url,
+            "http://localhost"
+        ).searchParams;
+
+    const id =
+        query.get("id");
+
+    if (!id) {
+
+        res.writeHead(400);
+
+        res.end(
+            "スケジュールIDがありません！"
+        );
+
+        return;
+    }
+
+    const success =
+        await deleteSchedule(id);
+
+    res.writeHead(
+        success ? 200 : 500,
+        {
+            "Content-Type":
+                "text/plain; charset=utf-8"
+        }
+    );
+
+    res.end(
+        success
+            ? "スケジュールを削除しました！"
+            : "スケジュールの削除に失敗しました！"
+    );
+
+    return;
+}
 
     // ==================================================
     // Robloxが現在のテクスチャIDを取得
