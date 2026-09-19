@@ -177,7 +177,7 @@ async function saveTextureId(newTextureId) {
 // スケジュールを登録
 // ==================================================
 
-async function addSchedule(executeAt, newTextureId) {
+async function addSchedule(executeAt, newTextureId, title) {
 
     try {
 
@@ -195,6 +195,7 @@ async function addSchedule(executeAt, newTextureId) {
                 body: JSON.stringify({
                     execute_at: executeAt,
                     texture_id: newTextureId,
+                    title: title,
                     executed: false
                 })
             }
@@ -214,7 +215,8 @@ async function addSchedule(executeAt, newTextureId) {
         console.log(
             "スケジュールを登録:",
             executeAt,
-            newTextureId
+            newTextureId,
+            title
         );
 
         return true;
@@ -240,7 +242,7 @@ async function getSchedules() {
     try {
 
         const response = await fetch(
-            `${supabaseUrl}/rest/v1/screen_schedule?select=id,execute_at,texture_id,executed&order=execute_at.asc`,
+            `${supabaseUrl}/rest/v1/screen_schedule?select=id,execute_at,texture_id,title,executed&order=execute_at.asc`,
             {
                 headers: {
                     "apikey": supabaseKey
@@ -731,6 +733,17 @@ button:hover {
 
 
 <p>
+タイトル
+</p>
+
+<input
+    id="scheduleTitle"
+    type="text"
+    placeholder="例：日本代表戦"
+>
+
+
+<p>
 日時
 </p>
 
@@ -865,6 +878,12 @@ async function changeImage() {
 
 async function addSchedule() {
 
+const title =
+    document
+    .getElementById("scheduleTitle")
+    .value
+    .trim();
+
     const date =
         document
         .getElementById("scheduleDate")
@@ -884,10 +903,9 @@ async function addSchedule() {
         .trim();
 
 
-    if (!date || !time || !id) {
-
+if (!title || !date || !time || !id) {
         alert(
-            "日時とテクスチャIDをすべて入力してください！"
+            "タイトル、日時、テクスチャIDをすべて入力してください！"
         );
 
         return;
@@ -904,13 +922,15 @@ async function addSchedule() {
 
     try {
 
-        const response =
-            await fetch(
-                "/schedule?executeAt=" +
-                encodeURIComponent(executeAt) +
-                "&id=" +
-                encodeURIComponent(id)
-            );
+const response =
+    await fetch(
+        "/schedule?executeAt=" +
+        encodeURIComponent(executeAt) +
+        "&id=" +
+        encodeURIComponent(id) +
+        "&title=" +
+        encodeURIComponent(title)
+    );
 
 
         const result =
@@ -1057,6 +1077,10 @@ async function loadSchedules() {
 
 
 item.innerHTML =
+    '<div class="schedule-title">' +
+        '🎬 ' + escapeHtml(schedule.title) +
+    '</div>' +
+
     '<div class="schedule-date">' +
         '📅 ' + escapeHtml(formattedDate) +
     '</div>' +
@@ -1195,8 +1219,10 @@ setInterval(
         const newTextureId =
             query.get("id");
 
+        const title =
+    query.get("title");
 
-        if (!executeAt || !newTextureId) {
+        if (!executeAt || !newTextureId || !title) {
 
             res.writeHead(400);
 
@@ -1208,11 +1234,12 @@ setInterval(
         }
 
 
-        const success =
-            await addSchedule(
-                executeAt,
-                newTextureId
-            );
+const success =
+    await addSchedule(
+        executeAt,
+        newTextureId,
+        title
+    );
 
 
         res.writeHead(
