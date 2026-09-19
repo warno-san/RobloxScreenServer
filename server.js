@@ -272,6 +272,53 @@ async function getSchedules() {
     }
 }
 
+// ==================================================
+// スケジュールを削除
+// ==================================================
+
+async function deleteSchedule(id) {
+
+    try {
+
+        const response = await fetch(
+            `${supabaseUrl}/rest/v1/screen_schedule?id=eq.${id}`,
+            {
+                method: "DELETE",
+
+                headers: {
+                    "apikey": supabaseKey
+                }
+            }
+        );
+
+
+        if (!response.ok) {
+
+            const errorText = await response.text();
+
+            throw new Error(
+                `Supabase削除エラー: ${response.status} ${errorText}`
+            );
+        }
+
+
+        console.log(
+            "スケジュールを削除:",
+            id
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "スケジュールの削除に失敗:",
+            error
+        );
+
+        return false;
+    }
+}
 
 // ==================================================
 // 実行するスケジュールを確認
