@@ -935,11 +935,10 @@ async function loadSchedules() {
         // スケジュールがない場合
         if (upcoming.length === 0) {
 
-            list.innerHTML = `
-                <div class="no-schedule">
-                    登録されているスケジュールはありません。
-                </div>
-            `;
+            list.innerHTML =
+                '<div class="no-schedule">' +
+                    '登録されているスケジュールはありません。' +
+                '</div>';
 
             return;
         }
@@ -980,22 +979,15 @@ async function loadSchedules() {
                 "schedule-item";
 
 
-            item.innerHTML = `
+item.innerHTML =
+    '<div class="schedule-date">' +
+        '📅 ' + escapeHtml(formattedDate) +
+    '</div>' +
 
-                <div class="schedule-date">
-
-                    📅 ${escapeHtml(formattedDate)}
-
-                </div>
-
-                <div class="schedule-id">
-
-                    テクスチャID：
-                    ${escapeHtml(schedule.texture_id)}
-
-                </div>
-
-            `;
+    '<div class="schedule-id">' +
+        'テクスチャID：' +
+        escapeHtml(schedule.texture_id) +
+    '</div>';
 
 
             list.appendChild(item);
@@ -1010,13 +1002,12 @@ async function loadSchedules() {
         );
 
 
-        document
-            .getElementById("scheduleList")
-            .innerHTML = `
-                <div class="no-schedule">
-                    スケジュールを取得できませんでした。
-                </div>
-            `;
+document
+    .getElementById("scheduleList")
+    .innerHTML =
+        '<div class="no-schedule">' +
+            'スケジュールを取得できませんでした。' +
+        '</div>';
     }
 }
 
