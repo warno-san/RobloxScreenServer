@@ -949,6 +949,36 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
+async function deleteSchedule(id) {
+
+    if (!confirm("このスケジュールを削除しますか？")) {
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            "/delete-schedule?id=" + encodeURIComponent(id)
+        );
+
+        const result = await response.text();
+
+        if (!response.ok) {
+            throw new Error(result);
+        }
+
+        alert("スケジュールを削除しました！");
+
+        // 一覧を更新
+        loadSchedules();
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("スケジュールの削除に失敗しました。");
+    }
+}
 
 // ==================================================
 // 登録済みスケジュールを表示
@@ -1034,7 +1064,13 @@ item.innerHTML =
     '<div class="schedule-id">' +
         'テクスチャID：' +
         escapeHtml(schedule.texture_id) +
-    '</div>';
+    '</div>' +
+
+    '<button class="delete-schedule-button" onclick="deleteSchedule(' +
+        schedule.id +
+    ')">' +
+        '🗑️ 削除' +
+    '</button>';
 
 
             list.appendChild(item);
@@ -1222,7 +1258,40 @@ setInterval(
 
         return;
     }
+// ==================================================
+// スケジュール削除
+// ==================================================
 
+if (pathname === "/delete-schedule") {
+
+    const id = url.searchParams.get("id");
+
+    if (!id) {
+        res.writeHead(400, {
+            "Content-Type": "text/plain; charset=utf-8"
+        });
+
+        res.end("IDが指定されていません");
+        return;
+    }
+
+    const success = await deleteSchedule(id);
+
+    res.writeHead(
+        success ? 200 : 500,
+        {
+            "Content-Type": "text/plain; charset=utf-8"
+        }
+    );
+
+    res.end(
+        success
+            ? "削除しました"
+            : "削除に失敗しました"
+    );
+
+    return;
+}
 
     // ==================================================
     // Robloxが現在のテクスチャIDを取得
