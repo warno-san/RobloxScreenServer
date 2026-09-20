@@ -4,6 +4,11 @@ const discordClient = new Client({
     intents: [GatewayIntentBits.Guilds]
 });
 
+discordClient.once("ready", () => {
+    console.log("Discord Bot 起動成功！");
+});
+
+discordClient.login(process.env.DISCORD_BOT_TOKEN);
 
 const http = require("http");
 
