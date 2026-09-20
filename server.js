@@ -1,3 +1,10 @@
+const { Client, GatewayIntentBits } = require("discord.js");
+
+const discordClient = new Client({
+    intents: [GatewayIntentBits.Guilds]
+});
+
+
 const http = require("http");
 
 let textureId = "";
