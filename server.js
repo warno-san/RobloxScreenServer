@@ -10,6 +10,37 @@ discordClient.once("ready", () => {
 
 discordClient.login(process.env.DISCORD_BOT_TOKEN);
 
+async function createDiscordEvent(title, startTime) {
+    try {
+        const guild = await discordClient.guilds.fetch(
+            process.env.DISCORD_GUILD_ID
+        );
+
+        const start = new Date(startTime);
+        const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+
+        const event = await guild.scheduledEvents.create({
+            name: title,
+            description: "同時視聴部屋の自動イベント",
+            scheduledStartTime: start,
+            scheduledEndTime: end,
+            privacyLevel: 2,
+            entityType: 3,
+            entityMetadata: {
+                location: "同時視聴部屋"
+            }
+        });
+
+        console.log("Discordイベント作成成功！");
+        console.log("イベント名:", event.name);
+        console.log("イベントID:", event.id);
+
+    } catch (error) {
+        console.error("Discordイベント作成失敗！");
+        console.error(error);
+    }
+}
+
 const http = require("http");
 
 let textureId = "";
